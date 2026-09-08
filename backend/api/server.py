@@ -9,7 +9,7 @@ from core.config import Config
 from ai.ai_manager import AIManager
 from ai.tool_router import ToolRouter
 from tasks.service import TaskService
-from data.conversations.history import ConversationHistory
+from memory.history import ConversationHistory
 
 # -------------------------------------------------------
 # Logging
