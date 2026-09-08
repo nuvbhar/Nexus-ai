@@ -211,6 +211,12 @@ class MemoryParser:
             r"\bcreate\b",
             r"\bmake\b",
             r"\bset\b",
+            r"\bwrite\b",
+            r"\bnote\b",
+            r"\brecord\b",
+            r"\bupdate\b",
+            r"\bchange\b",
+            r"\bmodify\b",
             r"\bi have\b",
             r"\bi've got\b",
             r"\bi need to\b",
@@ -276,7 +282,7 @@ class MemoryParser:
         if not has_remove_intent or "deadline" not in lower:
             return None
             
-        if re.search(r"\ball\b", lower):
+        if re.search(r"\b(?:all|remaining|every|everything)\b", lower):
             return MemoryRequest(action="remove_all_deadlines")
             
         title = None
@@ -342,6 +348,9 @@ class MemoryParser:
         # We only want this to operate on deadlines.
         if "deadline" not in lower:
             return None
+
+        if re.search(r"\b(?:all|remaining|every|everything)\b", lower):
+            return MemoryRequest(action="complete_all_deadlines")
 
         # -----------------------------------------------------
         # Try to extract a specific deadline title.
@@ -495,100 +504,89 @@ class MemoryParser:
     # =========================================================
 
     def _extract_date(self, prompt: str) -> Optional[str]:
+        import datetime
+        current_year = datetime.datetime.now().year
+
         print("[Parser for memory is running]")
-        # YYYY-MM-DD
+        
+        # YYYY-MM-DD or YYYY/MM/DD
         match = re.search(
-            r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b",
+            r"\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})\b",
             prompt,
         )
-
         if match:
             year, month, day = match.groups()
+            return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
 
-            return (
-                f"{int(year):04d}-"
-                f"{int(month):02d}-"
-                f"{int(day):02d}"
-            )
-
-        # DD/MM/YYYY
-        
+        # MM/DD/YYYY, DD/MM/YYYY, MM-DD-YYYY, DD-MM-YYYY
+        # We try to be smart: if the first number > 12, it must be DD.
+        # Otherwise, assume MM/DD/YYYY (American style) by default, or you can assume DD/MM/YYYY.
+        # Let's try to match both and use the one that is valid.
         match = re.search(
-            r"\b(\d{1,2})/(\d{1,2})/(20\d{2})\b",
+            r"\b(\d{1,2})[-/](\d{1,2})[-/](20\d{2})\b",
             prompt,
         )
-
         if match:
+            part1, part2, year = match.groups()
+            p1, p2 = int(part1), int(part2)
             
-            day, month, year = match.groups()
-            print("[Parser] DD-MM-YYYY matched:", day, month, year)
-            return (
-                f"{int(year):04d}-"
-                f"{int(month):02d}-"
-                f"{int(day):02d}"
-            )
+            # If part1 > 12, it has to be the day (DD/MM/YYYY)
+            if p1 > 12:
+                day, month = p1, p2
+            # If part2 > 12, it has to be the day (MM/DD/YYYY)
+            elif p2 > 12:
+                month, day = p1, p2
+            else:
+                # Ambiguous (e.g. 10/11/2026). Let's default to MM/DD/YYYY (US format)
+                month, day = p1, p2
+                
+            return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
 
-        # DD Month YYYY
         months = {
-            "january": 1,
-            "february": 2,
-            "march": 3,
-            "april": 4,
+            "january": 1, "jan": 1,
+            "february": 2, "feb": 2,
+            "march": 3, "mar": 3,
+            "april": 4, "apr": 4,
             "may": 5,
-            "june": 6,
-            "july": 7,
-            "august": 8,
-            "september": 9,
-            "october": 10,
-            "november": 11,
-            "december": 12,
+            "june": 6, "jun": 6,
+            "july": 7, "jul": 7,
+            "august": 8, "aug": 8,
+            "september": 9, "sep": 9, "sept": 9,
+            "october": 10, "oct": 10,
+            "november": 11, "nov": 11,
+            "december": 12, "dec": 12,
         }
-
         month_pattern = "|".join(months.keys())
 
+        # DD Month YYYY (or without YYYY)
         match = re.search(
-            rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+"
+            rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?"
             rf"({month_pattern})"
-            rf"(?:\s+(20\d{{2}}))?\b",
+            rf"(?:,?\s+(20\d{{2}}))?\b",
             prompt.lower(),
         )
-
         if match:
             day = int(match.group(1))
             month = months[match.group(2)]
             year = match.group(3)
-
             if not year:
-                # Do not guess the year.
-                return None
+                year = current_year
+            return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
 
-            return (
-                f"{int(year):04d}-"
-                f"{month:02d}-"
-                f"{day:02d}"
-            )
-
-        # Month DD YYYY
+        # Month DD YYYY (or without YYYY)
         match = re.search(
             rf"\b({month_pattern})\s+"
             rf"(\d{{1,2}})(?:st|nd|rd|th)?"
-            rf"(?:\s+(20\d{{2}}))?\b",
+            rf"(?:,?\s+(20\d{{2}}))?\b",
             prompt.lower(),
         )
-
         if match:
             month = months[match.group(1)]
             day = int(match.group(2))
             year = match.group(3)
-
             if not year:
-                return None
-
-            return (
-                f"{int(year):04d}-"
-                f"{month:02d}-"
-                f"{day:02d}"
-            )
+                year = current_year
+            return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
 
         return None
 

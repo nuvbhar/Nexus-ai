@@ -99,6 +99,9 @@ class MemoryRouter:
                 date=request.date,
             )
 
+        if request.action == "complete_all_deadlines":
+            return self.complete_all_deadlines()
+
         if request.action == "remove_deadline":
             return self.remove_deadline(
                 title=request.title,
@@ -244,6 +247,15 @@ class MemoryRouter:
         for deadline in deadlines:
             self.memory.delete_deadline(deadline.id)
         print("[MemoryRouter] Removed all deadlines.")
+        return True
+
+    def complete_all_deadlines(self):
+        deadlines = self.memory.get_deadlines(include_completed=False)
+        if not deadlines:
+            return True
+        for deadline in deadlines:
+            self.memory.complete_deadline(deadline.id)
+        print("[MemoryRouter] Completed all deadlines.")
         return True
 
     def complete_deadline(
