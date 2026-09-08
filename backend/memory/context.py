@@ -50,7 +50,7 @@ class MemoryContext:
             date = deadline.get("date", "Date not specified")
 
             lines.append(
-                f"{index}. {title} — due {date}"
+                f"{index}. {title} - due {date}"
             )
 
             description = deadline.get("description")
@@ -72,7 +72,7 @@ class MemoryContext:
 
             due_date = task.get("due_date")
             if due_date:
-                line += f" — due {due_date}"
+                line += f" - due {due_date}"
 
             lines.append(line)
 
@@ -94,14 +94,14 @@ class MemoryContext:
         `result` must come from MemoryService/MemoryRouter.
         """
 
-        if action == "get_deadlines":
+        if action in ("get_deadlines", "get_all_deadlines"):
             data = [
                 item.to_dict()
                 for item in result
             ]
 
             return f"""
-MEMORY CONTEXT — DEADLINES
+MEMORY CONTEXT - DEADLINES
 
 The following information was retrieved directly from Nexus's
 persistent memory storage.
@@ -109,14 +109,14 @@ persistent memory storage.
 {cls._format_deadlines(data)}
 """.strip()
 
-        if action == "get_projects":
+        if action in ("get_projects", "get_all_projects"):
             data = [
                 item.to_dict()
                 for item in result
             ]
 
             return f"""
-MEMORY CONTEXT — PROJECTS
+MEMORY CONTEXT - PROJECTS
 
 The following information was retrieved directly from Nexus's
 persistent memory storage.
@@ -124,14 +124,14 @@ persistent memory storage.
 {cls._format_projects(data)}
 """.strip()
 
-        if action == "get_tasks":
+        if action in ("get_tasks", "get_all_tasks"):
             data = [
                 item.to_dict()
                 for item in result
             ]
 
             return f"""
-MEMORY CONTEXT — TASKS
+MEMORY CONTEXT - TASKS
 
 The following information was retrieved directly from Nexus's
 persistent memory storage.
@@ -147,7 +147,7 @@ persistent memory storage.
             tasks = data.get("tasks", [])
 
             return f"""
-MEMORY CONTEXT — COMPLETE STORED MEMORY
+MEMORY CONTEXT - COMPLETE STORED MEMORY
 
 The following information was retrieved directly from Nexus's
 persistent memory storage.

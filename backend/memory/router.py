@@ -47,13 +47,22 @@ class MemoryRouter:
         # -----------------------------------------------------
 
         if request.action == "get_deadlines":
-            return self.get_deadlines()
+            return self.get_deadlines(include_completed=False)
+
+        if request.action == "get_all_deadlines":
+            return self.get_deadlines(include_completed=True)
 
         if request.action == "get_projects":
-            return self.get_projects()
+            return self.get_projects(status="active")
+
+        if request.action == "get_all_projects":
+            return self.get_projects(status=None)
 
         if request.action == "get_tasks":
-            return self.get_tasks()
+            return self.get_tasks(include_completed=False)
+            
+        if request.action == "get_all_tasks":
+            return self.get_tasks(include_completed=True)
 
         if request.action == "get_memory_summary":
             return self.get_memory_summary()
@@ -119,9 +128,9 @@ class MemoryRouter:
             description=description,
         )
 
-    def get_projects(self):
+    def get_projects(self, status: Optional[str] = "active"):
         return self.memory.get_projects(
-            status="active"
+            status=status
         )
 
     # =========================================================
@@ -221,8 +230,8 @@ class MemoryRouter:
                     "deadline",
                 }
 
-        if meaningful_words and meaningful_words.issubset(deadline_words):
-            matches.append(deadline)
+                if meaningful_words and meaningful_words.issubset(deadline_words):
+                    matches.append(deadline)
 
             if len(matches) == 1:
                 deadline = matches[0]
@@ -282,9 +291,9 @@ class MemoryRouter:
         )
 
         return None
-    def get_deadlines(self):
+    def get_deadlines(self, include_completed: bool = False):
         return self.memory.get_deadlines(
-            include_completed=False
+            include_completed=include_completed
         )
 
     # =========================================================
@@ -322,10 +331,11 @@ class MemoryRouter:
     def get_tasks(
         self,
         project_id: Optional[str] = None,
+        include_completed: bool = False,
     ):
         return self.memory.get_tasks(
             project_id=project_id,
-            include_completed=False,
+            include_completed=include_completed,
         )
 
     # =========================================================

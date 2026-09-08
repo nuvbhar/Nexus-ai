@@ -40,8 +40,11 @@ class ToolRouter:
 
     MEMORY_READ_ACTIONS = {
         "get_deadlines",
+        "get_all_deadlines",
         "get_projects",
+        "get_all_projects",
         "get_tasks",
+        "get_all_tasks",
         "get_memory_summary",
     }
 
@@ -247,6 +250,23 @@ Respond naturally and concisely.
         user_prompt,
         memory_request,
     ):
+        if memory_request.action == "add_deadline" and not memory_request.date:
+            return f"""
+SYSTEM:
+
+You are Nexus AI.
+
+The user attempted to store a deadline, but did not provide
+a recognized date format (e.g. YYYY-MM-DD).
+
+Ask the user to clarify the exact date for this deadline.
+
+User Request:
+{user_prompt}
+
+Respond naturally.
+""".strip()
+
         result = self.memory_router.execute(
             memory_request
         )

@@ -124,45 +124,39 @@ class MemoryParser:
         if any(re.search(pattern, lower) for pattern in combined_patterns):
             return MemoryRequest(action="get_memory_summary")
 
+        read_verbs = r"(?:what|show|list|lsit|display|get|fetch|retrieve|pull|tell me about|give me)"
+        modifiers = r"(?:\s+me)?(?:\s+all)?(?:\s+the)?(?:\s+my)?"
+        
+        # Helper to check if "all" is explicitly in the prompt
+        has_all = bool(re.search(r"\ball\b", lower))
+
         # Deadline queries
         deadline_patterns = (
-            r"\bwhat deadlines?\b",
-            r"\bshow (?:me )?(?:my )?deadlines?\b",
-            r"\blist (?:my )?deadlines?\b",
-            r"\bdisplay (?:my )?deadlines?\b",
+            rf"\b{read_verbs}{modifiers}\s+deadlines?\b",
             r"\bwhat(?:'s| is) my next deadline\b",
             r"\bwhat deadlines? (?:are|is) coming\b",
             r"\bupcoming deadlines?\b",
         )
-
         if any(re.search(pattern, lower) for pattern in deadline_patterns):
-            return MemoryRequest(action="get_deadlines")
+            return MemoryRequest(action="get_all_deadlines" if has_all else "get_deadlines")
 
         # Project queries
         project_patterns = (
-            r"\bwhat projects?\b",
-            r"\bshow (?:me )?(?:my )?projects?\b",
-            r"\blist (?:my )?projects?\b",
-            r"\bdisplay (?:my )?projects?\b",
+            rf"\b{read_verbs}{modifiers}\s+projects?\b",
             r"\bwhat projects? am i working on\b",
         )
-
         if any(re.search(pattern, lower) for pattern in project_patterns):
-            return MemoryRequest(action="get_projects")
+            return MemoryRequest(action="get_all_projects" if has_all else "get_projects")
 
         # Task queries
         task_patterns = (
-            r"\bwhat tasks?\b",
-            r"\bshow (?:me )?(?:my )?tasks?\b",
-            r"\blist (?:my )?tasks?\b",
-            r"\bdisplay (?:my )?tasks?\b",
+            rf"\b{read_verbs}{modifiers}\s+tasks?\b",
             r"\bwhat do i need to do\b",
             r"\bwhat should i work on\b",
             r"\bwhat do i have to do\b",
         )
-
         if any(re.search(pattern, lower) for pattern in task_patterns):
-            return MemoryRequest(action="get_tasks")
+            return MemoryRequest(action="get_all_tasks" if has_all else "get_tasks")
 
         return None
 
@@ -208,6 +202,10 @@ class MemoryParser:
             r"\bkeep track\b",
             r"\bdon'?t forget\b",
             r"\bdo not forget\b",
+            r"\badd\b",
+            r"\bcreate\b",
+            r"\bmake\b",
+            r"\bset\b",
             r"\bi have\b",
             r"\bi've got\b",
             r"\bi need to\b",
