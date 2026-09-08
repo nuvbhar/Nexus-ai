@@ -72,6 +72,11 @@ class MemoryParser:
         # WRITE operations
         # -----------------------------------------------------
 
+        # Deadline removal MUST be checked before normal deadline creation
+        removed_deadline = self._parse_remove_deadline(prompt)
+        if removed_deadline:
+            return removed_deadline
+
         # Deadline completion MUST be checked before normal
         # deadline creation.
         completed_deadline = self._parse_complete_deadline(prompt)
@@ -253,6 +258,48 @@ class MemoryParser:
     # =========================================================
     # Deadline
     # =========================================================
+    def _parse_remove_deadline(self, prompt: str) -> Optional[MemoryRequest]:
+        lower = prompt.lower().strip()
+        
+        remove_patterns = (
+            r"\bremove\b",
+            r"\bdelete\b",
+            r"\bclear\b",
+            r"\berase\b",
+        )
+        
+        has_remove_intent = any(
+            re.search(pattern, lower)
+            for pattern in remove_patterns
+        )
+        
+        if not has_remove_intent or "deadline" not in lower:
+            return None
+            
+        if re.search(r"\ball\b", lower):
+            return MemoryRequest(action="remove_all_deadlines")
+            
+        title = None
+        
+        patterns = (
+            r"(?:remove|delete|clear|erase)\s+(?:the\s+)?(.+?)\s+deadline\b",
+            r"(?:remove|delete|clear|erase)\s+deadline\s+(?:for\s+|called\s+)?(.+?)\b",
+        )
+        
+        for pattern in patterns:
+            match = re.search(pattern, lower, re.IGNORECASE)
+            if match:
+                extracted = match.group(1).strip()
+                if extracted and extracted not in {"this", "that", "my", "the"}:
+                    title = self._clean_name(extracted)
+                    break
+                    
+        return MemoryRequest(
+            action="remove_deadline",
+            title=title,
+            date=self._extract_date(prompt)
+        )
+
     def _parse_complete_deadline(
         self,
         prompt: str

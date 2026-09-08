@@ -95,9 +95,18 @@ class MemoryRouter:
         
         if request.action == "complete_deadline":
             return self.complete_deadline(
-            title=request.title,
-            date=request.date,
-    )
+                title=request.title,
+                date=request.date,
+            )
+
+        if request.action == "remove_deadline":
+            return self.remove_deadline(
+                title=request.title,
+                date=request.date,
+            )
+
+        if request.action == "remove_all_deadlines":
+            return self.remove_all_deadlines()
         print(
             f"[MemoryRouter] Unknown action: "
             f"{request.action}"
@@ -171,6 +180,71 @@ class MemoryRouter:
             description=description,
         )
     
+
+    def remove_deadline(
+        self,
+        title: Optional[str] = None,
+        date: Optional[str] = None,
+    ):
+        deadlines = self.memory.get_deadlines(
+            include_completed=True
+        )
+
+        if not deadlines:
+            print("[MemoryRouter] No deadlines found.")
+            return None
+
+        # ---------------------------------------------------------
+        # Try matching by title
+        # ---------------------------------------------------------
+        if title:
+            title_lower = title.strip().lower()
+            title_words = set(re.findall(r"\b[a-z0-9]+\b", title_lower))
+            matches = []
+
+            for deadline in deadlines:
+                deadline_lower = deadline.title.lower()
+                deadline_words = set(re.findall(r"\b[a-z0-9]+\b", deadline_lower))
+                meaningful_words = title_words - {"my", "the", "this", "that", "deadline"}
+
+                if meaningful_words and meaningful_words.issubset(deadline_words):
+                    matches.append(deadline)
+
+            if len(matches) == 1:
+                deadline = matches[0]
+                print(f"[MemoryRouter] Removing deadline: {deadline.title} ({deadline.id})")
+                self.memory.delete_deadline(deadline.id)
+                return True
+            elif len(matches) > 1:
+                print("[MemoryRouter] Could not uniquely identify the deadline to remove.")
+                return None
+
+        # ---------------------------------------------------------
+        # Fallback: match by date
+        # ---------------------------------------------------------
+        if date:
+            matches = [d for d in deadlines if d.date == date]
+
+            if len(matches) == 1:
+                deadline = matches[0]
+                print(f"[MemoryRouter] Removing deadline: {deadline.title} ({deadline.id})")
+                self.memory.delete_deadline(deadline.id)
+                return True
+            elif len(matches) > 1:
+                print("[MemoryRouter] Multiple deadlines found for that date.")
+                return None
+
+        print("[MemoryRouter] Could not find the deadline to remove.")
+        return None
+
+    def remove_all_deadlines(self):
+        deadlines = self.memory.get_deadlines(include_completed=True)
+        if not deadlines:
+            return True
+        for deadline in deadlines:
+            self.memory.delete_deadline(deadline.id)
+        print("[MemoryRouter] Removed all deadlines.")
+        return True
 
     def complete_deadline(
     self,

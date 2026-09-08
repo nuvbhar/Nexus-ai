@@ -282,10 +282,10 @@ SYSTEM:
 
 You are Nexus AI.
 
-The user attempted to store information in memory,
-but the backend could not save it.
+The user attempted a memory operation (add, complete, or remove),
+but the backend could not process it.
 
-Do not claim that the information was saved.
+Do not claim that the operation succeeded.
 
 Tell the user that the memory operation could not
 be completed.
@@ -305,16 +305,15 @@ SYSTEM:
 
 You are Nexus AI.
 
-The backend successfully stored the user's information
-in persistent memory.
+The backend successfully processed the user's memory request.
 
 Memory operation:
 {memory_request.action}
 
-Stored information:
+Operation Result / Data:
 {result}
 
-Tell the user naturally that you remembered/saved it.
+Tell the user naturally that the operation (saving/updating/removing) was completed successfully.
 
 Do not expose internal JSON files, backend implementation,
 or Python objects unless the user explicitly asks.
