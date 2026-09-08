@@ -75,7 +75,7 @@ class ToolRouter:
     # Public API
     # =========================================================
 
-    def process_prompt(self, prompt: str) -> str:
+    def process_prompt(self, prompt: str, history: list[dict] = None) -> str:
 
         logger.info("================================================")
         logger.info("TOOL ROUTER IS RUNNING")
@@ -110,7 +110,7 @@ class ToolRouter:
         # MEMORY
         # ---------------------------------------------------------
 
-        memory_request = self.memory_parser.parse(prompt)
+        memory_request = self.memory_parser.parse(prompt, history)
 
         if memory_request:
 

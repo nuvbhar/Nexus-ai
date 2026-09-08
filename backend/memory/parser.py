@@ -47,7 +47,7 @@ class MemoryParser:
     # Public API
     # =========================================================
 
-    def parse(self, prompt: str) -> Optional[MemoryRequest]:
+    def parse(self, prompt: str, history: list[dict] = None) -> Optional[MemoryRequest]:
         """
         Parse a user prompt into a MemoryRequest.
 
@@ -60,6 +60,14 @@ class MemoryParser:
             return None
 
         prompt = prompt.strip()
+
+        # -----------------------------------------------------
+        # Contextual Follow-up
+        # -----------------------------------------------------
+        if history:
+            followup = self._parse_followup(prompt, history)
+            if followup:
+                return followup
 
         # -----------------------------------------------------
         # READ operations MUST be checked first.
@@ -96,6 +104,38 @@ class MemoryParser:
         project = self._parse_project(prompt)
         if project:
             return project
+
+        return None
+
+    # =========================================================
+    # Contextual Follow-up
+    # =========================================================
+
+    def _parse_followup(self, prompt: str, history: list[dict]) -> Optional[MemoryRequest]:
+        if not history or len(history) < 2:
+            return None
+
+        last_assistant = None
+        last_user = None
+
+        for i in range(len(history)-1, -1, -1):
+            if history[i].get("role") == "assistant":
+                last_assistant = history[i].get("content", "")
+                if i - 1 >= 0 and history[i-1].get("role") == "user":
+                    last_user = history[i-1].get("content", "")
+                break
+
+        if not last_assistant or not last_user:
+            return None
+
+        # Re-parse the last user prompt to see what it was
+        prev_request = self.parse(last_user)
+
+        if prev_request and prev_request.action == "add_deadline" and not prev_request.date:
+            date = self._extract_date(prompt)
+            if date:
+                prev_request.date = date
+                return prev_request
 
         return None
 
@@ -541,6 +581,15 @@ class MemoryParser:
                 month, day = p1, p2
                 
             return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+
+        # Today / Tomorrow
+        lower = prompt.lower()
+        if re.search(r"\btomorrow\b", lower):
+            tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+            return tomorrow.strftime("%Y-%m-%d")
+        if re.search(r"\btoday\b", lower):
+            today = datetime.datetime.now()
+            return today.strftime("%Y-%m-%d")
 
         months = {
             "january": 1, "jan": 1,

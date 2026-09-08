@@ -194,8 +194,6 @@ async def websocket_endpoint(websocket: WebSocket):
             #
             # Stream tokens
             #
-            final_prompt = router.process_prompt(prompt)
-
             # -------------------------------------------------------
             # Conversation context
             # -------------------------------------------------------
@@ -203,6 +201,8 @@ async def websocket_endpoint(websocket: WebSocket):
             history = conversation_history.get_messages()
 
             logger.info(f"[Conversation] Using {len(history)} previous messages.")
+
+            final_prompt = router.process_prompt(prompt, history)
 
             # Store the ORIGINAL user message.
             # Do NOT store final_prompt because it may contain
