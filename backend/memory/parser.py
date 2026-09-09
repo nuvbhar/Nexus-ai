@@ -34,6 +34,7 @@ class MemoryRequest:
     # Deadline information
     title: Optional[str] = None
     date: Optional[str] = None
+    excluded_title: Optional[str] = None
 
     # Task information
     due_date: Optional[str] = None
@@ -322,8 +323,16 @@ class MemoryParser:
         if not has_remove_intent or "deadline" not in lower:
             return None
             
+        excluded_title = None
+        except_match = re.search(r"\bexcept\s+(?:for\s+)?(?:the\s+)?(.+)", lower)
+        if except_match:
+            extracted = except_match.group(1).strip()
+            extracted = re.sub(r"\s+deadline.*$", "", extracted).strip()
+            if extracted and extracted not in {"this", "that", "my", "the"}:
+                excluded_title = self._clean_name(extracted)
+                
         if re.search(r"\b(?:all|remaining|every|everything)\b", lower):
-            return MemoryRequest(action="remove_all_deadlines")
+            return MemoryRequest(action="remove_all_deadlines", excluded_title=excluded_title)
             
         title = None
         
@@ -463,28 +472,27 @@ class MemoryParser:
         if "deadline" not in lower:
             return None
 
-        # A deadline must look like a storage statement.
         if not self._looks_like_explicit_write(prompt):
             return None
 
         date = self._extract_date(prompt)
-
-        if not date:
-            # We know the user is trying to store a deadline,
-            # but we do not have a reliable date.
-            return MemoryRequest(
-                action="add_deadline",
-                title=self._extract_deadline_title(prompt),
-            )
-
         title = self._extract_deadline_title(prompt)
         project_name = self._extract_project_name(prompt)
+        description = prompt.strip()
+
+        if not date:
+            return MemoryRequest(
+                action="add_deadline",
+                title=title,
+                description=description,
+            )
 
         return MemoryRequest(
             action="add_deadline",
             title=title,
             date=date,
             project_name=project_name,
+            description=description,
         )
 
     # =========================================================
@@ -667,20 +675,24 @@ class MemoryParser:
     # =========================================================
 
     def _extract_deadline_title(self, prompt: str) -> str:
+        lower = prompt.lower()
+        
+        patterns = [
+            r"deadline\s+(?:for|to|of)\s+(?:a|an|the|my|our\s+)?(.+?)(?:\s+is\s+on\s+|\s+on\s+|\s+by\s+|\s+due\s+|$)",
+            r"(?:have|got|set)\s+(?:a|an|the|my|our)?\s*(.+?)\s+deadline",
+            r"(?:a|an|the|my|our)\s+(.+?)\s+deadline"
+        ]
+        
+        for p in patterns:
+            m = re.search(p, lower)
+            if m:
+                extracted = m.group(1).strip()
+                if extracted and len(extracted) > 1 and "remember" not in extracted:
+                    return self._clean_name(extracted)
+                    
         project_name = self._extract_project_name(prompt)
-
         if project_name:
             return f"{project_name} deadline"
-
-        lower = prompt.lower()
-
-        match = re.search(
-            r"deadline\s+(?:for|of)\s+(.+?)(?:\s+on\s+|\s+by\s+|\s+due\s+|$)",
-            lower,
-        )
-
-        if match:
-            return self._clean_name(match.group(1))
 
         return "Deadline"
 

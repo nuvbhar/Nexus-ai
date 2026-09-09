@@ -109,7 +109,7 @@ class MemoryRouter:
             )
 
         if request.action == "remove_all_deadlines":
-            return self.remove_all_deadlines()
+            return self.remove_all_deadlines(excluded_title=request.excluded_title)
         print(
             f"[MemoryRouter] Unknown action: "
             f"{request.action}"
@@ -240,13 +240,31 @@ class MemoryRouter:
         print("[MemoryRouter] Could not find the deadline to remove.")
         return None
 
-    def remove_all_deadlines(self):
+    def remove_all_deadlines(self, excluded_title: Optional[str] = None):
         deadlines = self.memory.get_deadlines(include_completed=True)
         if not deadlines:
             return True
-        for deadline in deadlines:
-            self.memory.delete_deadline(deadline.id)
-        print("[MemoryRouter] Removed all deadlines.")
+
+        if excluded_title:
+            excluded_lower = excluded_title.strip().lower()
+            excluded_words = set(re.findall(r"\b[a-z0-9]+\b", excluded_lower))
+            
+            for deadline in deadlines:
+                deadline_lower = deadline.title.lower()
+                deadline_words = set(re.findall(r"\b[a-z0-9]+\b", deadline_lower))
+                meaningful_words = excluded_words - {"my", "the", "this", "that", "deadline"}
+
+                if meaningful_words and meaningful_words.issubset(deadline_words):
+                    print(f"[MemoryRouter] Skipping excluded deadline: {deadline.title} ({deadline.id})")
+                    continue
+                
+                self.memory.delete_deadline(deadline.id)
+            print("[MemoryRouter] Removed all deadlines except excluded.")
+        else:
+            for deadline in deadlines:
+                self.memory.delete_deadline(deadline.id)
+            print("[MemoryRouter] Removed all deadlines.")
+        
         return True
 
     def complete_all_deadlines(self):
