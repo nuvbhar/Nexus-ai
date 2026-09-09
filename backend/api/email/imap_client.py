@@ -49,7 +49,7 @@ class IMAPClient:
         Connect to the IMAP server and authenticate.
         """
 
-        self.connection = imaplib.IMAP4_SSL(self.server, self.port)
+        self.connection = imaplib.IMAP4_SSL(self.server, self.port, timeout=10)
         self.connection.login(self.username, self.password)
 
     # ---------------------------------------------------------

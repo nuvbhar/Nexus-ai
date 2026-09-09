@@ -202,7 +202,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             logger.info(f"[Conversation] Using {len(history)} previous messages.")
 
-            final_prompt = router.process_prompt(prompt, history)
+            final_prompt = await asyncio.to_thread(router.process_prompt, prompt, history)
 
             # Store the ORIGINAL user message.
             # Do NOT store final_prompt because it may contain
@@ -258,5 +258,5 @@ async def websocket_endpoint(websocket: WebSocket):
                 "message": str(e)
             })
 
-        except Exception:
-            pass
+        except Exception as send_err:
+            logger.error(f"Failed to send error to client: {send_err}")

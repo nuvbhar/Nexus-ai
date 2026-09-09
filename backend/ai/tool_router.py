@@ -115,8 +115,7 @@ class ToolRouter:
         if memory_request:
 
             logger.info(
-                "[Router] Memory tool selected:",
-                memory_request.action,
+                f"[Router] Memory tool selected: {memory_request.action}"
             )
 
             return self._process_memory(
@@ -143,8 +142,7 @@ class ToolRouter:
     ):
 
         logger.info(
-            "[Router] Executing memory action:",
-            memory_request.action,
+            f"[Router] Executing memory action: {memory_request.action}"
         )
 
         # ---------------------------------------------------------
@@ -213,8 +211,7 @@ Respond naturally and briefly.
 """.strip()
 
         logger.info(
-            "[Router] Memory context prepared for:",
-            memory_request.action,
+            f"[Router] Memory context prepared for: {memory_request.action}"
         )
 
         return f"""
@@ -487,9 +484,9 @@ Respond naturally.
         # Prevent an extremely large email from
         # consuming the model context.
 
-        if len(body) > 30000:
+        if len(body) > 12000:
             body = (
-                body[:30000]
+                body[:12000]
                 + "\n\n[Email body truncated.]"
             )
 

@@ -108,6 +108,21 @@ class AIManager:
         if history:
             messages.extend(history)
 
+        if prompt.startswith("SYSTEM:\n"):
+            parts = prompt.split("User Request:\n", 1)
+            if len(parts) == 2:
+                system_content = parts[0].replace("SYSTEM:\n", "").strip()
+                user_content = parts[1].strip()
+                messages.append({
+                    "role": "system",
+                    "content": system_content,
+                })
+                messages.append({
+                    "role": "user",
+                    "content": user_content,
+                })
+                return messages
+
         messages.append(
             {
                 "role": "user",

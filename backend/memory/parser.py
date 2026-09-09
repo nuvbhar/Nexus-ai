@@ -17,6 +17,7 @@ information that can be determined reliably.
 from __future__ import annotations
 
 import re
+import datetime
 from dataclasses import dataclass
 from typing import Optional
 
@@ -552,7 +553,6 @@ class MemoryParser:
     # =========================================================
 
     def _extract_date(self, prompt: str) -> Optional[str]:
-        import datetime
         current_year = datetime.datetime.now().year
 
         print("[Parser for memory is running]")
